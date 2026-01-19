@@ -12,6 +12,7 @@ import std/[streams, options, sequtils]
 type
   ScfgError* = object of CatchableError
     line*: int
+    col*: Option[int]
 
 
   Directive* = ref object
@@ -23,9 +24,12 @@ type
   Block* = seq[Directive]
 
 
-func error(msg: string, line: int): ref ScfgError =
-  result = new_exception(ScfgError, msg)
+func error(msg: string, line: int, col = -1): ref ScfgError =
+  result = new_exception(
+    ScfgError, msg & "Line: " & $line & (if col > -1: ", column: " & $col else: "")
+  )
   result.line = line
+  result.col = if col > -1: some(col) else: none(int)
 
 
 func split_words(line: string, line_no: int, col: var int): seq[string] =
@@ -44,9 +48,9 @@ func split_words(line: string, line_no: int, col: var int): seq[string] =
     case c
     of '\\':
       if quote == '\'':
-        raise error("Invalid escape sequence: Escapes are not allowed in single quotes", line_no)
+        raise error("Invalid escape sequence: Escapes are not allowed in single quotes", line_no, col)
       if col + 1 >= line.len:
-        raise error("Unfinished escape sequence at end of line", line_no)
+        raise error("Unfinished escape sequence at end of line", line_no, col)
       escape_next = true
     of '"', '\'':
       if quote == '"' and c == '\'' or quote == '\'' and c == '"':
@@ -59,18 +63,17 @@ func split_words(line: string, line_no: int, col: var int): seq[string] =
           inc col
           continue
         quote = c
-    of ' ', '\t', '{', '}', '#':
+    of ' ', '\t', '{', '}':
       if quote != '\0':
         word.add(c)
-      elif c in {'{', '#', '}'}:
-        if c in {'{', '}'}:
-          var i = col + 1
-          while i < line.len and line[i] in {' ', '\t'}:
-            inc i
-          if i < line.len and line[i] != '#':
-            raise error("Expected newline after '" & c & "'", line_no)
+      elif c in {'{', '}'}:
+        var i = col + 1
+        while i < line.len and line[i] in {' ', '\t'}:
+          inc i
+        if i != line.len:
+          raise error("Expected newline after '" & c & "'", line_no, col)
         if c == '}' and result.len != 0:  # This is an artificial prohibition but enforced by the grammar…
-          raise error("The end of a block marker '}' must be alone on a line", line_no)
+          raise error("The end of a block marker '}' must be alone on a line", line_no, col)
         return result
       elif word.len > 0:
         result.add(word)
@@ -98,7 +101,7 @@ proc read_block(s: Stream, line_no: var int, depth: int, expect_close=false): Bl
     let words = split_words(line, line_no, col)
     if col < line.len and line[col] == '}':
       if not expect_close:
-        raise error("Unexpected block closing '}' without opening '{'", line_no)
+        raise error("Unexpected block closing '}' without opening '{'", line_no, col)
       return result
     if words.len == 0:
       continue

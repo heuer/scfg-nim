@@ -13,11 +13,11 @@ Usage
 
     let server_config = """
     server   {
-        listen  80   # Listen on port 80
+        listen  80
         server_name    example.com   www.example.com
 
         location / {
-            root   /var/www/html  # Document root
+            root   /var/www/html
             index  index.html index.htm
         }
 
