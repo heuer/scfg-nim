@@ -23,7 +23,7 @@ type
   Block* = seq[Directive]
 
 
-func new_scfg_error*(msg: string, line: int): ref ScfgError =
+func error(msg: string, line: int): ref ScfgError =
   result = new_exception(ScfgError, msg)
   result.line = line
 
@@ -44,9 +44,9 @@ func split_words(line: string, line_no: int, col: var int): seq[string] =
     case c
     of '\\':
       if quote == '\'':
-        raise new_scfg_error("Invalid escape sequence: Escapes are not allowed in single quotes", line_no)
+        raise error("Invalid escape sequence: Escapes are not allowed in single quotes", line_no)
       if col + 1 >= line.len:
-        raise new_scfg_error("Unfinished escape sequence at end of line", line_no)
+        raise error("Unfinished escape sequence at end of line", line_no)
       escape_next = true
     of '"', '\'':
       if quote == '"' and c == '\'' or quote == '\'' and c == '"':
@@ -68,9 +68,9 @@ func split_words(line: string, line_no: int, col: var int): seq[string] =
           while i < line.len and line[i] in {' ', '\t'}:
             inc i
           if i < line.len and line[i] != '#':
-            raise new_scfg_error("Expected newline after '" & c & "'", line_no)
+            raise error("Expected newline after '" & c & "'", line_no)
         if c == '}' and result.len != 0:  # This is an artificial prohibition but enforced by the grammar…
-          raise new_scfg_error("The end of a block marker '}' must be alone on a line", line_no)
+          raise error("The end of a block marker '}' must be alone on a line", line_no)
         return result
       elif word.len > 0:
         result.add(word)
@@ -82,12 +82,12 @@ func split_words(line: string, line_no: int, col: var int): seq[string] =
   if word.len > 0:
     result.add(word)
   if quote != '\0':
-    raise new_scfg_error("Unclosed string literal", line_no)
+    raise error("Unclosed string literal", line_no)
 
 
 proc read_block(s: Stream, line_no: var int, depth: int, expect_close=false): Block =
   if depth >= 10:
-    raise new_scfg_error("Block nesting depth exceeded", line_no)
+    raise error("Block nesting depth exceeded", line_no)
 
   while not s.at_end():
     var line = s.read_line()
@@ -98,7 +98,7 @@ proc read_block(s: Stream, line_no: var int, depth: int, expect_close=false): Bl
     let words = split_words(line, line_no, col)
     if col < line.len and line[col] == '}':
       if not expect_close:
-        raise new_scfg_error("Unexpected block closing '}' without opening '{'", line_no)
+        raise error("Unexpected block closing '}' without opening '{'", line_no)
       return result
     if words.len == 0:
       continue
@@ -111,7 +111,7 @@ proc read_block(s: Stream, line_no: var int, depth: int, expect_close=false): Bl
       )
     )
   if expect_close:
-    raise new_scfg_error("Unclosed block: Expected '}'", line_no)
+    raise error("Unclosed block: Expected '}'", line_no)
 
 
 proc read_scfg*(stream: Stream): Block =
