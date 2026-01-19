@@ -18,8 +18,8 @@ Usage
 
         location / {
             root   /var/www/html  # Document root
-		    index  index.html index.htm
-    	}
+            index  index.html index.htm
+        }
 
         location = /robots.txt {
             allow all
