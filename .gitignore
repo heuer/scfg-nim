@@ -1,0 +1,11 @@
+.venv/
+.idea/
+build/
+dist/
+protocol/*.h
+*.egg-info/
+*.output
+*.out
+*.so
+bin/
+__pycache__
