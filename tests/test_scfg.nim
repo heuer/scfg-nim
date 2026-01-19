@@ -83,7 +83,7 @@ suite "API tests":
     let blck = read_scfg(input)
     check blck.len == 1
     var res = blck.get("train")
-    check res.is_some 
+    check res.is_some
     let train = res.get
     check train.name == "train"
     check train.params == @["Shinkansen"]
@@ -107,7 +107,7 @@ suite "API tests":
     let blck = read_scfg(input)
     check blck.len == 1
     let res = blck.get("train")
-    check res.is_some 
+    check res.is_some
     let train = res.get
     let models = train.get_all("model")
     check models.len == 2
@@ -131,11 +131,11 @@ suite "examples":
 
   let server_config = """
   server   {
-      listen  80   # Listen on port 80
+      listen  80
       server_name    example.com   www.example.com
 
       location / {
-          root   /var/www/html  # Document root
+          root   /var/www/html
           index  index.html index.htm
       }
 
@@ -152,12 +152,14 @@ suite "examples":
     check config.len == 1
     let server = config.get("server").get
     let port = server.get("listen").get
+    check port.params.len == 1
     check port.params[0] == "80"
     let server_name = server.get("server_name").get
     check server_name.params == @["example.com", "www.example.com"]
     let locations = server.get_all("location")
     check locations.len == 2
     check locations[0].params[0] == "/"
+    check locations[0].get("root").get().params.len == 1
     check locations[1].params[0] == "="
     check locations[1].params[1] == "/robots.txt"
 
