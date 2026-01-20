@@ -35,6 +35,26 @@ func canonicalize(blck: Block, level=0): string =
     result.add('\n')
 
 
+const example = """
+train "Shinkansen" {
+	model "E5" {
+   	max-speed 320km/h
+    weight 453.5t
+
+    lines-served "Tōhoku" "Hokkaido"
+	}
+
+  model "E7" {
+    max-speed 275km/h
+    weight 540t
+
+    lines-served "Hokuriku" "Jōetsu"
+  }
+}
+"""
+
+
+
 suite "scfg test suite":
 
   let tests_dir = current_source_path().parent_dir() / "scfg"
@@ -61,26 +81,9 @@ suite "scfg test suite":
 
 suite "API tests":
 
-  let input = """
-  train "Shinkansen" {
-  	model "E5" {
-	  	max-speed 320km/h
-		weight 453.5t
-
-  		lines-served "Tōhoku" "Hokkaido"
-	  }
-
-  	model "E7" {
-	  	max-speed 275km/h
-		weight 540t
-
-	  	lines-served "Hokuriku" "Jōetsu"
-  	}
-  }
-  """
 
   test "get":
-    let blck = read_scfg(input)
+    let blck = read_scfg(example)
     check blck.len == 1
     var res = blck.get("train")
     check res.is_some
@@ -96,7 +99,7 @@ suite "API tests":
 
 
   test "get: no result":
-    let blck = read_scfg(input)
+    let blck = read_scfg(example)
     check blck.len == 1
     check blck.get("truck").is_none
     let train = blck.get("train").get
@@ -104,7 +107,7 @@ suite "API tests":
 
 
   test "get-all":
-    let blck = read_scfg(input)
+    let blck = read_scfg(example)
     check blck.len == 1
     let res = blck.get("train")
     check res.is_some
@@ -118,13 +121,25 @@ suite "API tests":
 
 
   test "get-all: empty result":
-    let blck = read_scfg(input)
+    let blck = read_scfg(example)
     check blck.len == 1
     check blck.get_all("truck").len == 0
     let trains = blck.get_all("train")
     check trains.len == 1
     let train = trains[0]
     check train.get_all("type").len == 0
+
+
+suite "fields":
+
+  test "line field":
+    let blck = read_scfg(example)
+    let train = blck.get("train").get
+    check train.line == 1
+    let models = train.get_all("model")
+    check models.len == 2
+    check models[0].line == 2
+    check models[1].line == 9
 
 
 suite "examples":

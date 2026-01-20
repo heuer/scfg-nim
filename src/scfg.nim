@@ -19,6 +19,7 @@ type
     name*: string
     params*: seq[string]
     children*: Block
+    line*: int
 
 
   Block* = seq[Directive]
@@ -110,7 +111,8 @@ proc read_block(s: Stream, line_no: var int, depth: int, expect_close=false): Bl
       Directive(
         name: words[0],
         params: if words.len > 1: words[1..^1] else: @[],
-        children: if has_block: read_block(s, line_no, depth + 1, true) else: @[]
+        line: line_no,
+        children: if has_block: read_block(s, line_no, depth + 1, true) else: @[],
       )
     )
   if expect_close:
