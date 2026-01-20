@@ -7,7 +7,7 @@
 ##
 ## Format specification: <https://codeberg.org/emersion/scfg>
 ##
-import std/[streams, options, sequtils]
+import std/[streams, options, strutils, sequtils]
 
 type
   ScfgError* = object of CatchableError
@@ -96,7 +96,8 @@ proc read_block(s: Stream, line_no: var int, depth: int, expect_close=false): Bl
   while not s.at_end():
     var line = s.read_line()
     inc line_no
-    if line.len == 0 or line[0] == '#':
+    let trimmed = line.strip()
+    if trimmed.len == 0 or trimmed[0] == '#':
       continue
     var col = 0
     let words = split_words(line, line_no, col)
