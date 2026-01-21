@@ -7,7 +7,7 @@
 ##
 ## Format specification: <https://codeberg.org/emersion/scfg>
 ##
-import std/[streams, options, strutils, sequtils]
+import std/[streams, options, sequtils]
 
 type
   ScfgError* = object of CatchableError
@@ -31,6 +31,11 @@ func error(msg: string, line: int, col = -1): ref ScfgError =
   )
   result.line = line
   result.col = if col > -1: some(col) else: none(int)
+
+
+func eat_space(s: string, i: var int) =
+  while i < s.len and s[i] in {' ', '\t'}:
+    inc i
 
 
 func split_words(line: string, line_no: int, col: var int): seq[string] =
@@ -69,8 +74,7 @@ func split_words(line: string, line_no: int, col: var int): seq[string] =
         word.add(c)
       elif c in {'{', '}'}:
         var i = col + 1
-        while i < line.len and line[i] in {' ', '\t'}:
-          inc i
+        eat_space(line, i)
         if i != line.len:
           raise error("Expected newline after '" & c & "'.", line_no, col)
         if c == '}' and result.len != 0:  # This is an artificial prohibition but enforced by the grammar…
@@ -96,10 +100,10 @@ proc read_block(s: Stream, line_no: var int, depth: int, expect_close=false): Bl
   while not s.at_end():
     var line = s.read_line()
     inc line_no
-    let trimmed = line.strip()
-    if trimmed.len == 0 or trimmed[0] == '#':
-      continue
     var col = 0
+    eat_space(line, col)
+    if col == line.len or col < line.len and line[col] == '#':
+      continue
     let words = split_words(line, line_no, col)
     if col < line.len and line[col] == '}':
       if not expect_close:
