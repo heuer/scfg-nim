@@ -10,7 +10,7 @@
 import std/[streams, options, sequtils]
 
 type
-  ScfgError* = object of CatchableError
+  ScfgError* = object of ValueError
     line*: int
     col*: Option[int]
 
@@ -47,8 +47,8 @@ func split_words(line: string, line_no: int, col: var int): seq[string] =
   while col < line.len:
     let c = line[col]
     if escape_next:
-      word.add(c)
       escape_next = false
+      word.add(c)
       inc col
       continue
     case c
@@ -99,8 +99,8 @@ proc read_block(s: Stream, line_no: var int, depth: int, expect_close=false): Bl
 
   while not s.at_end():
     var line = s.read_line()
-    inc line_no
     var col = 0
+    inc line_no
     eat_space(line, col)
     if col == line.len or col < line.len and line[col] == '#':
       continue
