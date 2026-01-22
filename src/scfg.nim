@@ -41,23 +41,20 @@ func eat_space(s: string, i: var int) =
 func split_words(line: string, line_no: int, col: var int): seq[string] =
   var
     word = ""
-    escape_next = false
     quote = '\0'
 
   while col < line.len:
     let c = line[col]
-    if escape_next:
-      escape_next = false
-      word.add(c)
-      inc col
-      continue
     case c
     of '\\':
       if quote == '\'':
         raise error("Invalid escape sequence: Escapes are not allowed in single quotes.", line_no, col)
-      if col + 1 >= line.len:
-        raise error("Unfinished escape sequence at end of line.", line_no, col)
-      escape_next = true
+      inc col
+      if col >= line.len:
+        raise error("Unfinished escape sequence at end of line.", line_no, col - 1)
+      word.add(line[col])
+      inc col
+      continue
     of '"', '\'':
       if quote == '"' and c == '\'' or quote == '\'' and c == '"':
         word.add(c)
