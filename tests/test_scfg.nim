@@ -20,19 +20,17 @@ func canonicalize(s: string): string =
 
 func canonicalize(blck: Block, level=0): string =
   for directive in blck:
-    result.add(repeat("    ", level))
+    result.add(repeat('\t', level))
     result.add(canonicalize(directive.name))
     for param in directive.params:
       result.add(" " & canonicalize(param))
     if directive.children.len > 0:
       result.add(" {\n")
       result.add(canonicalize(directive.children, level + 1))
-      result.add(repeat("    ", level))
+      result.add(repeat('\t', level))
       result.add("}\n")
     else:
       result.add("\n")
-  if level == 0:
-    result.add('\n')
 
 
 const example = """
