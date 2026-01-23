@@ -25,12 +25,16 @@ type
   Block* = seq[Directive]
 
 
-func error(msg: string, line: int, col = -1): ref ScfgError =
-  result = new_exception(
+const NO_QUOTE = '\0'
+
+
+func error(msg: string, line: int, col = -1) =
+  let ex = new_exception(
     ScfgError, msg & " Line: " & $line & (if col > -1: ", column: " & $col else: "")
   )
-  result.line = line
-  result.col = if col > -1: some(col) else: none(int)
+  ex.line = line
+  ex.col = if col > -1: some(col) else: none(int)
+  raise ex
 
 
 func eat_space(s: string, i: var int) =
@@ -41,41 +45,38 @@ func eat_space(s: string, i: var int) =
 func split_words(line: string, line_no: int, col: var int): seq[string] =
   var
     word = ""
-    quote = '\0'
+    quote = NO_QUOTE
 
   while col < line.len:
     let c = line[col]
     case c
     of '\\':
       if quote == '\'':
-        raise error("Invalid escape sequence: Escapes are not allowed in single quotes.", line_no, col)
+        error("Invalid escape sequence: Escapes are not allowed in single quotes.", line_no, col)
       inc col
       if col >= line.len:
-        raise error("Unfinished escape sequence at end of line.", line_no, col - 1)
+        error("Unfinished escape sequence at end of line.", line_no, col - 1)
       word.add(line[col])
-      inc col
-      continue
     of '"', '\'':
-      if quote == '"' and c == '\'' or quote == '\'' and c == '"':
-        word.add(c)
-      else:
-        if quote != '\0':
+      if quote != NO_QUOTE:
+        if quote != c:
+          word.add(c)
+        else:
           result.add(word)
           word = ""
-          quote = '\0'
-          inc col
-          continue
+          quote = NO_QUOTE
+      else:
         quote = c
     of ' ', '\t', '{', '}':
-      if quote != '\0':
+      if quote != NO_QUOTE:
         word.add(c)
       elif c in {'{', '}'}:
         var i = col + 1
         eat_space(line, i)
         if i != line.len:
-          raise error("Expected newline after '" & c & "'.", line_no, col)
+          error("Expected newline after '" & c & "'.", line_no, col)
         if c == '}' and result.len != 0:  # This is an artificial prohibition but enforced by the grammar…
-          raise error("The end of a block marker '}' must be alone on a line.", line_no, col)
+          error("The end of a block marker '}' must be alone on a line.", line_no, col)
         return result
       elif word.len > 0:
         result.add(word)
@@ -86,13 +87,13 @@ func split_words(line: string, line_no: int, col: var int): seq[string] =
 
   if word.len > 0:
     result.add(word)
-  if quote != '\0':
-    raise error("Unclosed string literal.", line_no)
+  if quote != NO_QUOTE:
+    error("Unclosed string literal.", line_no)
 
 
 proc read_block(s: Stream, line_no: var int, depth: int, expect_close=false): Block =
   if depth >= 10:
-    raise error("Block nesting depth exceeded.", line_no)
+    error("Block nesting depth exceeded.", line_no)
 
   while not s.at_end():
     var line = s.read_line()
@@ -104,7 +105,7 @@ proc read_block(s: Stream, line_no: var int, depth: int, expect_close=false): Bl
     let words = split_words(line, line_no, col)
     if col < line.len and line[col] == '}':
       if not expect_close:
-        raise error("Unexpected block closing '}' without opening '{'.", line_no, col)
+        error("Unexpected block closing '}' without opening '{'.", line_no, col)
       return result
     if words.len == 0:
       continue
@@ -118,7 +119,7 @@ proc read_block(s: Stream, line_no: var int, depth: int, expect_close=false): Bl
       )
     )
   if expect_close:
-    raise error("Unclosed block: Expected '}'.", line_no)
+    error("Unclosed block: Expected '}'.", line_no)
 
 
 proc read_scfg*(stream: Stream): Block =
