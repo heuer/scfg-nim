@@ -46,45 +46,47 @@ func split_words(line: string, line_no: int, col: var int): seq[string] =
   var
     word = ""
     quote = NO_QUOTE
-
   while col < line.len:
     let c = line[col]
-    case c
-    of '\\':
+    if c == '\\':
       if quote == '\'':
         error("Invalid escape sequence: Escapes are not allowed in single quotes.", line_no, col)
       inc col
       if col >= line.len:
         error("Unfinished escape sequence at end of line.", line_no, col - 1)
-      word.add(line[col])
-    of '"', '\'':
-      if quote != NO_QUOTE:
-        if quote != c:
-          word.add(c)
-        else:
-          result.add(word)
-          word = ""
-          quote = NO_QUOTE
-      else:
-        quote = c
-    of ' ', '\t', '{', '}':
-      if quote != NO_QUOTE:
-        word.add(c)
-      elif c in {'{', '}'}:
+      case line[col]:
+      of 'n': word.add('\n')
+      of 'r': word.add('\r')
+      of 't': word.add('\t')
+      else: word.add(line[col])
+    elif quote == NO_QUOTE:
+      if c in {'{', '}'}:
         var i = col + 1
         eat_space(line, i)
-        if i != line.len:
+        if i < line.len:
           error("Expected newline after '" & c & "'.", line_no, col)
         if c == '}' and result.len != 0:  # This is an artificial prohibition but enforced by the grammar…
           error("The end of a block marker '}' must be alone on a line.", line_no, col)
-        return result
-      elif word.len > 0:
+        return
+      if c in {' ', '\t'}:
+        if word.len > 0:
+          result.add(word)
+          word = ""
+      elif c in {'"', '\''}:
+        if word.len > 0:
+          result.add(word)
+          word = ""
+        quote = c
+      else:
+        word.add(c)
+    else:
+      if c == quote:
         result.add(word)
         word = ""
-    else:
-      word.add(c)
+        quote = NO_QUOTE
+      else:
+        word.add(c)
     inc col
-
   if word.len > 0:
     result.add(word)
   if quote != NO_QUOTE:
@@ -100,7 +102,7 @@ proc read_block(s: Stream, line_no: var int, depth: int, expect_close=false): Bl
     var col = 0
     inc line_no
     eat_space(line, col)
-    if col == line.len or col < line.len and line[col] == '#':
+    if col >= line.len or line[col] == '#':
       continue
     let words = split_words(line, line_no, col)
     if col < line.len and line[col] == '}':

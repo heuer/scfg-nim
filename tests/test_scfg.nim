@@ -12,9 +12,14 @@ import scfg
 func canonicalize(s: string): string =
   result = "\""
   for c in s:
-    if c in {'"', '\t'}:
+    if c in {'"', '\t', '\r', '\n'}:
       result.add('\\')
-    result.add(c)
+      if c == '"': result.add('"')
+      elif c == '\n': result.add('n')
+      elif c == '\r': result.add('r')
+      elif c == '\t': result.add('t')
+    else:
+      result.add(c)
   result.add('"')
 
 
