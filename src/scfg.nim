@@ -12,7 +12,6 @@ import std/[streams, options, sequtils]
 type
   ScfgError* = object of ValueError
     line*: int
-    col*: Option[int]
 
 
   Directive* = ref object
@@ -28,12 +27,9 @@ type
 const NO_QUOTE = '\0'
 
 
-func error(msg: string, line: int, col = -1) =
-  let ex = new_exception(
-    ScfgError, msg & " Line: " & $line & (if col > -1: ", column: " & $col else: "")
-  )
+func error(msg: string, line: int) {.noReturn.} =
+  let ex = new_exception(ScfgError, msg & " Line: " & $line)
   ex.line = line
-  ex.col = if col > -1: some(col) else: none(int)
   raise ex
 
 
@@ -50,10 +46,10 @@ func split_words(line: string, line_no: int, col: var int): seq[string] =
     let c = line[col]
     if c == '\\':
       if quote == '\'':
-        error("Invalid escape sequence: Escapes are not allowed in single quotes.", line_no, col)
+        error("Invalid escape sequence: Escapes are not allowed in single quotes.", line_no)
       inc col
       if col >= line.len:
-        error("Unfinished escape sequence at end of line.", line_no, col - 1)
+        error("Unfinished escape sequence at end of line.", line_no)
       case line[col]:
       of 'n': word.add('\n')
       of 'r': word.add('\r')
@@ -64,9 +60,9 @@ func split_words(line: string, line_no: int, col: var int): seq[string] =
         var i = col + 1
         eat_space(line, i)
         if i < line.len:
-          error("Expected newline after '" & c & "'.", line_no, col)
+          error("Expected newline after '" & c & "'.", line_no)
         if c == '}' and result.len != 0:  # This is an artificial prohibition but enforced by the grammar…
-          error("The end of a block marker '}' must be alone on a line.", line_no, col)
+          error("The end of a block marker '}' must be alone on a line.", line_no)
         return
       if c in {' ', '\t'}:
         if word.len > 0:
@@ -107,7 +103,7 @@ proc read_block(s: Stream, line_no: var int, depth: int, expect_close=false): Bl
     let words = split_words(line, line_no, col)
     if col < line.len and line[col] == '}':
       if not expect_close:
-        error("Unexpected block closing '}' without opening '{'.", line_no, col)
+        error("Unexpected block closing '}' without opening '{'.", line_no)
       return result
     if words.len == 0:
       continue
