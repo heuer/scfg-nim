@@ -45,6 +45,7 @@ Usage
 Convert the config on the fly into objects:
 
 .. code-block:: nim
+
     type
       LocationConfig = object
         path: string
