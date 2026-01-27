@@ -166,7 +166,7 @@ func get_all*(directive: Directive, name: string): seq[Directive] =
 
 func get_str*(directive: Directive): string =
   ## Returns the first param of the directive.
-  ## Raises ValueError if less or more params are provided
+  ## Raises a `ValueError` if less or more params are provided
   if directive.params.len != 1:
     error("Expected exactly one value for " & directive.name, directive.line)
   return directive.params[0]
@@ -174,9 +174,9 @@ func get_str*(directive: Directive): string =
 
 func get_int*(directive: Directive): int =
   ## Returns the first param of the directive if it is an integer.
-  ## Raises a ValueError otherwise.
+  ## Raises a `ValueError` otherwise.
   ##
-  ## Note: A value of 10_000 is iterpreted as a valid integer.
+  ## .. note:: A value of 10_000 is iterpreted as a valid integer.
   let s = get_str(directive)
   try:
     return parse_int(s)
@@ -187,7 +187,7 @@ func get_int*(directive: Directive): int =
 
 func get_uint*(directive: Directive): uint =
   ## Returns the first param of the directive if it is an unsigned integer.
-  ## Raises a ValueError otherwise.
+  ## Raises a `ValueError` otherwise.
   let s = get_str(directive)
   try:
     return parse_uint(s)
@@ -198,7 +198,7 @@ func get_uint*(directive: Directive): uint =
 
 func get_float*(directive: Directive): float =
   ## Returns the first param of the directive if it is a decimal floating point.
-  ## Raises a ValueError otherwise.
+  ## Raises a `ValueError` otherwise.
   let s = get_str(directive)
   try:
     return parse_float(s)

@@ -190,25 +190,26 @@ suite "examples":
         locations: seq[LocationConfig]
 
 
-    func error(msg: string, directive: Directive) =
-      raise new_exception(ValueError, msg & ", line: " & $directive.line)
+    func error(msg: string, line: int) =
+      raise new_exception(ValueError, msg & ", line: " & $line)
 
 
     func error_unknown(directive: Directive) =
-      error("Unknown directive " & directive.name, directive)
+      error("Unknown directive " & directive.name, directive.line)
 
 
     func parse_bool(directive: Directive): bool =
       let val = directive.get_str()
       if val notin ["on", "off"]:
-        error("Expected either 'on' or 'off' for " & directive.name, directive)
+        error("Expected either 'on' or 'off' for " & directive.name & " got: " & val,
+              directive.line)
       return val == "on"
 
 
     func parse_location(section: Directive): LocationConfig =
       result.exact_match = false
       if section.params.len == 0:
-        error("Expected a location path", section)
+        error("Expected a location path", section.line)
       if section.params.len > 1:
         result.exact_match = section.params[0] == "="
       result.path = section.params[^1]
