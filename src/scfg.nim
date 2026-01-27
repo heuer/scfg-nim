@@ -175,6 +175,8 @@ func get_str*(directive: Directive): string =
 func get_int*(directive: Directive): int =
   ## Returns the first param of the directive if it is an integer.
   ## Raises a ValueError otherwise.
+  ##
+  ## Note: A value of 10_000 is iterpreted as a valid integer.
   let s = get_str(directive)
   try:
     return parse_int(s)

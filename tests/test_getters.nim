@@ -29,6 +29,15 @@ block:
 
 block:
   let input = """
+  key value 2
+  """
+  let d = directive(input)
+  expect(ValueError):
+    discard get_str(d)
+
+
+block:
+  let input = """
   key ""
   """
   check "" == get_str(directive(input))
@@ -39,6 +48,13 @@ block:
   key 1
   """
   check 1 == get_int(directive(input))
+
+
+block:
+  let input = """
+  key 10_000
+  """
+  check 10000 == get_int(directive(input))
 
 
 block:
