@@ -7,7 +7,7 @@
 ##
 ## Format specification: <https://codeberg.org/emersion/scfg>
 ##
-import std/[streams, options, sequtils]
+import std/[streams, options, sequtils, strutils]
 
 type
   ScfgError* = object of ValueError
@@ -132,7 +132,8 @@ proc read_scfg*(s: string): Block =
 
 
 proc load_scfg*(path: string): Block =
-  ## Reads the scfg from a file provided by the path name and returns a (maybe empty) Block.
+  ## Reads the scfg from a file provided by the path name and returns a
+  ## (maybe empty) Block.
   let stream = new_file_stream(path, fm_read)
   if stream == nil:
     raise new_exception(IOError, "Cannot open file: " & path)
@@ -161,4 +162,45 @@ func get*(directive: Directive, name: string): Option[Directive] =
 func get_all*(directive: Directive, name: string): seq[Directive] =
   ## Returns all directives with the provided name
   return get_all(directive.children, name)
+
+
+func get_str*(directive: Directive): string =
+  ## Returns the first param of the directive.
+  ## Raises ValueError if less or more params are provided
+  if directive.params.len != 1:
+    error("Expected exactly one value for " & directive.name, directive.line)
+  return directive.params[0]
+
+
+func get_int*(directive: Directive): int =
+  ## Returns the first param of the directive if it is an integer.
+  ## Raises a ValueError otherwise.
+  let s = get_str(directive)
+  try:
+    return parse_int(s)
+  except ValueError:
+    error("Expected an integer for " & directive.name & " got : " & s,
+          directive.line)
+
+
+func get_uint*(directive: Directive): uint =
+  ## Returns the first param of the directive if it is an unsigned integer.
+  ## Raises a ValueError otherwise.
+  let s = get_str(directive)
+  try:
+    return parse_uint(s)
+  except ValueError:
+    error("Expected an unsigned integer for " & directive.name & " got : " & s,
+          directive.line)
+
+
+func get_float*(directive: Directive): float =
+  ## Returns the first param of the directive if it is a decimal floating point.
+  ## Raises a ValueError otherwise.
+  let s = get_str(directive)
+  try:
+    return parse_float(s)
+  except ValueError:
+    error("Expected a decimal floating point for " & directive.name &
+          " got : " & s, directive.line)
 
