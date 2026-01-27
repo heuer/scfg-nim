@@ -59,7 +59,7 @@ train "Shinkansen" {
 
 suite "scfg test suite":
 
-  let tests_dir = current_source_path().parent_dir() / "scfg"
+  let tests_dir = current_source_path().parent_dir()
 
   for kind, path in walk_dir(tests_dir / "valid"):
     if kind != pc_file:
