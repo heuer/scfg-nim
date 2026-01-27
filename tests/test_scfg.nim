@@ -162,8 +162,7 @@ suite "examples":
     check config.len == 1
     let server = config.get("server").get
     let port = server.get("listen").get
-    check port.params.len == 1
-    check port.params[0] == "80"
+    check port.get_int() == 80
     let server_name = server.get("server_name").get
     check server_name.params == @["example.com", "www.example.com"]
     let locations = server.get_all("location")
@@ -186,7 +185,7 @@ suite "examples":
         access_log: bool
 
       ServerConfig = object
-        port: int
+        port: uint
         names: seq[string]
         locations: seq[LocationConfig]
 
@@ -200,9 +199,10 @@ suite "examples":
 
 
     func parse_bool(directive: Directive): bool =
-      if directive.params.len != 1 or directive.params[0] notin ["on", "off"]:
+      let val = directive.get_str()
+      if val notin ["on", "off"]:
         error("Expected either 'on' or 'off' for " & directive.name, directive)
-      return directive.params[0] == "on"
+      return val == "on"
 
 
     func parse_location(section: Directive): LocationConfig =
@@ -214,13 +214,11 @@ suite "examples":
       result.path = section.params[^1]
       result.access_log = true
       for child in section.children:
-        if child.name != "index" and child.params.len != 1:
-          error("Expected exactly one value for " & child.name, child)
         case child.name:
         of "log_not_found": result.log_not_found = parse_bool(child)
-        of "allow": result.allow = child.params[0]
+        of "allow": result.allow = child.get_str
         of "access_log": result.access_log = parse_bool(child)
-        of "root": result.root = child.params[0]
+        of "root": result.root = child.get_str
         of "index": result.index = child.params
         else: error_unknown(child)
 
@@ -228,13 +226,11 @@ suite "examples":
     func parse_server(section: Directive): ServerConfig =
       for child in section.children:
         case child.name:
-        of "listen":
-          if child.params.len != 1:
-            error("Expected exactly one value for " & child.name, child)
-          result.port = parse_int(child.params[0])
+        of "listen": result.port = child.get_uint()
         of "server_name": result.names = child.params
         of "location": result.locations.add parse_location(child)
         else: error_unknown(child)
+
 
     var servers: seq[ServerConfig]
 
@@ -243,7 +239,6 @@ suite "examples":
         servers.add parse_server(directive)
       else:
         error_unknown(directive)
-
 
     check servers.len == 1
     check servers[0].port == 80
