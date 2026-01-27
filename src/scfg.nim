@@ -181,7 +181,7 @@ func get_int*(directive: Directive): int =
   try:
     return parse_int(s)
   except ValueError:
-    error("Expected an integer for " & directive.name & " got : " & s,
+    error("Expected an integer for " & directive.name & " got: " & s,
           directive.line)
 
 
@@ -192,7 +192,7 @@ func get_uint*(directive: Directive): uint =
   try:
     return parse_uint(s)
   except ValueError:
-    error("Expected an unsigned integer for " & directive.name & " got : " & s,
+    error("Expected an unsigned integer for " & directive.name & " got: " & s,
           directive.line)
 
 
@@ -204,5 +204,5 @@ func get_float*(directive: Directive): float =
     return parse_float(s)
   except ValueError:
     error("Expected a decimal floating point for " & directive.name &
-          " got : " & s, directive.line)
+          " got: " & s, directive.line)
 
