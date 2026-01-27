@@ -207,7 +207,6 @@ suite "examples":
 
 
     func parse_location(section: Directive): LocationConfig =
-      result.exact_match = false
       if section.params.len == 0:
         error("Expected a location path", section.line)
       result.exact_match = section.params[0] == "="
@@ -235,10 +234,9 @@ suite "examples":
     var servers: seq[ServerConfig]
 
     for directive in read_scfg(server_config):
-      if directive.name == "server":
-        servers.add parse_server(directive)
-      else:
-        error_unknown(directive)
+      case directive.name:
+      of "server": servers.add parse_server(directive)
+      else: error_unknown(directive)
 
     check servers.len == 1
     check servers[0].port == 80
