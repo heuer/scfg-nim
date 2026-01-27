@@ -210,8 +210,7 @@ suite "examples":
       result.exact_match = false
       if section.params.len == 0:
         error("Expected a location path", section.line)
-      if section.params.len > 1:
-        result.exact_match = section.params[0] == "="
+      result.exact_match = section.params[0] == "="
       result.path = section.params[^1]
       result.access_log = true
       for child in section.children:
