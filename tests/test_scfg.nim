@@ -5,7 +5,7 @@
 ##
 ## Test against the scfg deserializer.
 ##
-import std/[os, unittest, strutils, options]
+import std/[os, unittest, strutils, sequtils]
 import scfg
 
 
@@ -38,25 +38,6 @@ func canonicalize(blck: Block, level=0): string =
       result.add("\n")
 
 
-const example = """
-train "Shinkansen" {
-	model "E5" {
-   	max-speed 320km/h
-    weight 453.5t
-
-    lines-served "Tōhoku" "Hokkaido"
-	}
-
-  model "E7" {
-    max-speed 275km/h
-    weight 540t
-
-    lines-served "Hokuriku" "Jōetsu"
-  }
-}
-"""
-
-
 suite "scfg test suite":
 
   let tests_dir = current_source_path().parent_dir()
@@ -79,62 +60,6 @@ suite "scfg test suite":
     test "Invalid: " & filename:
       expect(ScfgError):
         discard load_scfg(path)
-
-
-suite "API tests":
-
-  test "get":
-    let blck = read_scfg(example)
-    check blck.len == 1
-    var res = blck.get("train")
-    check res.is_some
-    let train = res.get
-    check train.name == "train"
-    check train.params == @["Shinkansen"]
-    check train.children.len == 2
-    res = train.get("model")
-    check res.is_some
-    let model = res.get
-    check model.name == "model"
-    check model.params == @["E5"]
-
-  test "get: no result":
-    let blck = read_scfg(example)
-    check blck.len == 1
-    check blck.get("truck").is_none
-    let train = blck.get("train").get
-    check train.get("type").is_none
-
-  test "get-all":
-    let blck = read_scfg(example)
-    check blck.len == 1
-    let res = blck.get("train")
-    check res.is_some
-    let train = res.get
-    let models = train.get_all("model")
-    check models.len == 2
-    check models[0].name == "model"
-    check models[0].params[0] == "E5"
-    check models[1].name == "model"
-    check models[1].params[0] == "E7"
-
-  test "get-all: empty result":
-    let blck = read_scfg(example)
-    check blck.len == 1
-    check blck.get_all("truck").len == 0
-    let trains = blck.get_all("train")
-    check trains.len == 1
-    let train = trains[0]
-    check train.get_all("type").len == 0
-
-  test "line field":
-    let blck = read_scfg(example)
-    let train = blck.get("train").get
-    check train.line == 1
-    let models = train.get_all("model")
-    check models.len == 2
-    check models[0].line == 2
-    check models[1].line == 9
 
 
 suite "examples":
@@ -160,15 +85,15 @@ suite "examples":
   test "First example from README.rst":
     let config = read_scfg(server_config)
     check config.len == 1
-    let server = config.get("server").get
-    let port = server.get("listen").get
-    check port.get_int() == 80
-    let server_name = server.get("server_name").get
+    let server = config[0]
+    let port = server.children[0]
+    check port.to_int == 80
+    let server_name = server.children[1]
     check server_name.params == @["example.com", "www.example.com"]
-    let locations = server.get_all("location")
+    let locations = server.children.filter_it(it.name == "location")
     check locations.len == 2
     check locations[0].params[0] == "/"
-    check locations[0].get("root").get().params.len == 1
+    check locations[0].children[0].to_str == "/var/www/html"
     check locations[1].params[0] == "="
     check locations[1].params[1] == "/robots.txt"
 
@@ -199,7 +124,7 @@ suite "examples":
 
 
     func parse_bool(directive: Directive): bool =
-      let val = directive.get_str()
+      let val = directive.to_str()
       if val notin ["on", "off"]:
         error("Expected either 'on' or 'off' for " & directive.name & " got: " & val,
               directive.line)
@@ -215,9 +140,9 @@ suite "examples":
       for child in section.children:
         case child.name:
         of "log_not_found": result.log_not_found = parse_bool(child)
-        of "allow": result.allow = child.get_str
+        of "allow": result.allow = child.to_str
         of "access_log": result.access_log = parse_bool(child)
-        of "root": result.root = child.get_str
+        of "root": result.root = child.to_str
         of "index": result.index = child.params
         else: error_unknown(child)
 
@@ -225,7 +150,7 @@ suite "examples":
     func parse_server(section: Directive): ServerConfig =
       for child in section.children:
         case child.name:
-        of "listen": result.port = child.get_uint()
+        of "listen": result.port = child.to_uint()
         of "server_name": result.names = child.params
         of "location": result.locations.add parse_location(child)
         else: error_unknown(child)

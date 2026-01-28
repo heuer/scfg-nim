@@ -9,6 +9,7 @@ Usage
 
 .. code-block:: nim
 
+    import std/sequtils
     import scfg
 
     let server_config = """
@@ -28,16 +29,17 @@ Usage
         }
     }
     """
-
     let config = read_scfg(server_config)
-    let server = config.get("server").get
-    let port = server.get("listen").get
-    assert port.get_int() == 80
-    let server_name = server.get("server_name").get
+    assert config.len == 1
+    let server = config[0]
+    let port = server.children[0]
+    assert port.to_int == 80
+    let server_name = server.children[1]
     assert server_name.params == @["example.com", "www.example.com"]
-    let locations = server.get_all("location")
+    let locations = server.children.filter_it(it.name == "location")
     assert locations.len == 2
     assert locations[0].params[0] == "/"
+    assert locations[0].children[0].to_str == "/var/www/html"
     assert locations[1].params[0] == "="
     assert locations[1].params[1] == "/robots.txt"
 
@@ -71,9 +73,9 @@ Convert the config on the fly into objects:
 
 
     func parse_bool(directive: Directive): bool =
-      let val = directive.get_str()
+      let val = directive.to_str()
       if val notin ["on", "off"]:
-        error("Expected either 'on' or 'off' for " & directive.name & "got: " & val,
+        error("Expected either 'on' or 'off' for " & directive.name & " got: " & val,
               directive.line)
       return val == "on"
 
@@ -87,9 +89,9 @@ Convert the config on the fly into objects:
       for child in section.children:
         case child.name:
         of "log_not_found": result.log_not_found = parse_bool(child)
-        of "allow": result.allow = child.get_str
+        of "allow": result.allow = child.to_str
         of "access_log": result.access_log = parse_bool(child)
-        of "root": result.root = child.get_str
+        of "root": result.root = child.to_str
         of "index": result.index = child.params
         else: error_unknown(child)
 
@@ -97,7 +99,7 @@ Convert the config on the fly into objects:
     func parse_server(section: Directive): ServerConfig =
       for child in section.children:
         case child.name:
-        of "listen": result.port = child.get_uint()
+        of "listen": result.port = child.to_uint()
         of "server_name": result.names = child.params
         of "location": result.locations.add parse_location(child)
         else: error_unknown(child)
@@ -110,13 +112,11 @@ Convert the config on the fly into objects:
       of "server": servers.add parse_server(directive)
       else: error_unknown(directive)
 
-
     assert servers.len == 1
     assert servers[0].port == 80
     assert servers[0].locations.len == 2
     assert servers[0].locations[0].access_log
     assert not servers[0].locations[1].access_log
-
 
 
 Similar projects

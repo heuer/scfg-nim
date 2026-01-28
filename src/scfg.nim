@@ -7,7 +7,7 @@
 ##
 ## Format specification: <https://codeberg.org/emersion/scfg>
 ##
-import std/[streams, options, sequtils, strutils]
+import std/[streams, strutils]
 
 type
   ScfgError* = object of ValueError
@@ -141,30 +141,7 @@ proc load_scfg*(path: string): Block =
   return read_scfg(stream)
 
 
-func get*(blck: Block, name: string): Option[Directive] =
-  ## Returns the first directive with the provided name
-  for directive in blck:
-    if directive.name == name:
-      return some(directive)
-  return none(Directive)
-
-
-func get_all*(blck: Block, name: string): seq[Directive] =
-  ## Returns all directives with the provided name
-  return blck.filter_it(it.name == name)
-
-
-func get*(directive: Directive, name: string): Option[Directive] =
-  ## Returns the first directive with the provided name
-  return get(directive.children, name)
-
-
-func get_all*(directive: Directive, name: string): seq[Directive] =
-  ## Returns all directives with the provided name
-  return get_all(directive.children, name)
-
-
-func get_str*(directive: Directive): string =
+func to_str*(directive: Directive): string =
   ## Returns the first param of the directive.
   ## Raises a `ValueError` if less or more params are provided
   if directive.params.len != 1:
@@ -172,12 +149,12 @@ func get_str*(directive: Directive): string =
   return directive.params[0]
 
 
-func get_int*(directive: Directive): int =
+func to_int*(directive: Directive): int =
   ## Returns the first param of the directive if it is an integer.
   ## Raises a `ValueError` otherwise.
   ##
   ## .. note:: A value of 10_000 is iterpreted as a valid integer.
-  let s = get_str(directive)
+  let s = to_str(directive)
   try:
     return parse_int(s)
   except ValueError:
@@ -185,10 +162,10 @@ func get_int*(directive: Directive): int =
           directive.line)
 
 
-func get_uint*(directive: Directive): uint =
+func to_uint*(directive: Directive): uint =
   ## Returns the first param of the directive if it is an unsigned integer.
   ## Raises a `ValueError` otherwise.
-  let s = get_str(directive)
+  let s = to_str(directive)
   try:
     return parse_uint(s)
   except ValueError:
@@ -196,10 +173,10 @@ func get_uint*(directive: Directive): uint =
           directive.line)
 
 
-func get_float*(directive: Directive): float =
+func to_float*(directive: Directive): float =
   ## Returns the first param of the directive if it is a decimal floating point.
   ## Raises a `ValueError` otherwise.
-  let s = get_str(directive)
+  let s = to_str(directive)
   try:
     return parse_float(s)
   except ValueError:
