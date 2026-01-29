@@ -24,7 +24,9 @@ type
   Block* = seq[Directive]
 
 
-const NO_QUOTE = '\0'
+const
+  NO_QUOTE = '\0'
+  MAX_DEPTH = 1000
 
 
 func error(msg: string, line: int) {.noReturn.} =
@@ -90,7 +92,7 @@ func split_words(line: string, line_no: int, col: var int): seq[string] =
 
 
 proc read_block(s: Stream, line_no: var int, depth: int, expect_close=false): Block =
-  if depth >= 10:
+  if depth >= MAX_DEPTH:
     error("Block nesting depth exceeded.", line_no)
 
   while not s.at_end():

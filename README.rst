@@ -72,7 +72,7 @@ Convert the config on the fly into objects:
       error("Unknown directive " & directive.name, directive.line)
 
 
-    func parse_bool(directive: Directive): bool =
+    func to_bool(directive: Directive): bool =
       let val = directive.to_str()
       if val notin ["on", "off"]:
         error("Expected either 'on' or 'off' for " & directive.name & " got: " & val,
@@ -88,9 +88,9 @@ Convert the config on the fly into objects:
       result.access_log = true
       for child in section.children:
         case child.name:
-        of "log_not_found": result.log_not_found = parse_bool(child)
+        of "log_not_found": result.log_not_found = child.to_bool
         of "allow": result.allow = child.to_str
-        of "access_log": result.access_log = parse_bool(child)
+        of "access_log": result.access_log = child.to_bool
         of "root": result.root = child.to_str
         of "index": result.index = child.params
         else: error_unknown(child)
