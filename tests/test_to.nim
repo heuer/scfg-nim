@@ -38,6 +38,17 @@ block:
 
 block:
   let input = """
+  key value {
+
+  }
+  """
+  let d = directive(input)
+  expect(ValueError):
+    discard to_str(d)
+
+
+block:
+  let input = """
   key ""
   """
   check "" == to_str(directive(input))
@@ -170,6 +181,17 @@ block:
   key "+1.25"
   """
   check +1.25 == to_float(directive(input))
+
+
+block:
+  let input = """
+  key "+1.25" {
+
+  }
+  """
+  let d = directive(input)
+  expect(ValueError):
+    discard to_float(d)
 
 
 block:

@@ -18,6 +18,7 @@ type
     name*: string
     params*: seq[string]
     children*: Block
+    has_block*: bool
     line*: int
 
 
@@ -115,6 +116,7 @@ proc read_block(s: Stream, line_no: var int, depth: int, expect_close=false): Bl
         name: words[0],
         params: if words.len > 1: words[1..^1] else: @[],
         line: line_no,
+        has_block: has_block,
         children: if has_block: read_block(s, line_no, depth + 1, true) else: @[],
       )
     )
@@ -146,7 +148,7 @@ proc load_scfg*(path: string): Block =
 func to_str*(directive: Directive): string =
   ## Returns the first param of the directive.
   ## Raises a `ValueError` if less or more params are provided
-  if directive.params.len != 1:
+  if directive.params.len != 1 or directive.has_block:
     error("Expected exactly one value for " & directive.name, directive.line)
   return directive.params[0]
 

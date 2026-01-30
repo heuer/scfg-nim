@@ -62,6 +62,31 @@ suite "scfg test suite":
         discard load_scfg(path)
 
 
+suite "API":
+
+  test "has_block":
+    check not read_scfg("key")[0].has_block
+    check not read_scfg("key value")[0].has_block
+    var s = """
+    block {
+      key
+    }
+    """
+    check read_scfg(s)[0].has_block
+    s = """
+    block {
+
+    }
+    """
+    check read_scfg(s)[0].has_block
+    s = """
+    key value {
+
+    }
+    """
+    check read_scfg(s)[0].has_block
+
+
 suite "examples":
 
   let server_config = """
