@@ -49,15 +49,13 @@ func split_words(line: string, line_no: int, col: var int): seq[string] =
     let c = line[col]
     if c == '\\':
       if quote == '\'':
-        error("Invalid escape sequence: Escapes are not allowed in single quotes.", line_no)
+        word.add(c)
+        inc col
+        continue
       inc col
       if col >= line.len:
-        error("Unfinished escape sequence at end of line.", line_no)
-      case line[col]:
-      of 'n': word.add('\n')
-      of 'r': word.add('\r')
-      of 't': word.add('\t')
-      else: word.add(line[col])
+        error("Unfinished escape sequence.", line_no)
+      word.add(line[col])
     elif quote == NO_QUOTE:
       if c in {'{', '}'}:
         var i = col + 1
