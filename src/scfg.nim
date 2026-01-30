@@ -18,8 +18,11 @@ type
     name*: string
     params*: seq[string]
     children*: Block
+    ## Indicates if the directive has a block: `{ […] }`
+    ## This might be useful to know because a directive with an empty block
+    ## (children sequence is empty) behaves identical to a directive w/o a block.
     has_block*: bool
-    line*: int
+    line*: int  ## Line number from the scfg
 
 
   Block* = seq[Directive]
@@ -145,7 +148,8 @@ proc load_scfg*(path: string): Block =
 
 func to_str*(directive: Directive): string =
   ## Returns the first param of the directive.
-  ## Raises a `ValueError` if less or more params are provided
+  ## Raises a `ValueError` if the directive has less or more params or if the
+  ## directive has a block (see `has_block`)
   if directive.params.len != 1 or directive.has_block:
     error("Expected exactly one value for " & directive.name, directive.line)
   return directive.params[0]
@@ -155,7 +159,7 @@ func to_int*(directive: Directive): int =
   ## Returns the first param of the directive if it is an integer.
   ## Raises a `ValueError` otherwise.
   ##
-  ## .. note:: A value of 10_000 is iterpreted as a valid integer.
+  ## .. note:: A value of 10_000 is interpreted as a valid integer.
   let s = to_str(directive)
   try:
     return parse_int(s)
