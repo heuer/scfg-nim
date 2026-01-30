@@ -148,9 +148,8 @@ proc load_scfg*(path: string): Block =
 
 func to_str*(directive: Directive): string =
   ## Returns the first param of the directive.
-  ## Raises a `ValueError` if the directive has less or more params or if the
-  ## directive has a block (see `has_block`)
-  if directive.params.len != 1 or directive.has_block:
+  ## Raises a `ValueError` if the directive has less or more params.
+  if directive.params.len != 1:
     error("Expected exactly one value for " & directive.name, directive.line)
   return directive.params[0]
 

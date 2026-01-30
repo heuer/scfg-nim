@@ -43,8 +43,7 @@ block:
   }
   """
   let d = directive(input)
-  expect(ValueError):
-    discard to_str(d)
+  check "value" == to_str(d)
 
 
 block:
@@ -190,8 +189,7 @@ block:
   }
   """
   let d = directive(input)
-  expect(ValueError):
-    discard to_float(d)
+  check 1.25 == to_float(d)
 
 
 block:
