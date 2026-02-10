@@ -14,15 +14,33 @@ type
     line*: int
 
 
+  ScfgEventKind* = enum
+    evt_start  ## Indicates the start of a directive
+    evt_end  ## Indicates the end of a directive
+
+
+  ScfgEvent* = object
+    case kind*: ScfgEventKind
+    of evt_start:
+      name*: string  ## Directive name
+      params*: seq[string]  ## Directive parameters
+      ## Indicates if the event has a block.
+      ## It cannot be assumed that the directive has children, it merly
+      ## symbolizes that the directive has an openig block `{`
+      has_block*: bool
+      line*: int  ## Line number from the scfg doc
+    of evt_end: discard
+
+
   Directive* = ref object
-    name*: string
-    params*: seq[string]
+    name*: string  ## Directive name
+    params*: seq[string]  ## Directive parameters
     children*: Block
     ## Indicates if the directive has a block: `{ […] }`
     ## This might be useful to know because a directive with an empty block
     ## (children sequence is empty) behaves identical to a directive w/o a block.
     has_block*: bool
-    line*: int  ## Line number from the scfg
+    line*: int  ## Line number from the scfg doc
 
 
   Block* = seq[Directive]
@@ -30,7 +48,7 @@ type
 
 const
   NO_QUOTE = '\0'
-  MAX_DEPTH = 1000
+  EVT_END_DIRECTIVE = ScfgEvent(kind: evt_end)
 
 
 func error(msg: string, line: int) {.noReturn.} =
@@ -93,42 +111,70 @@ func split_words(line: string, line_no: int, col: var int): seq[string] =
     error("Unclosed string literal.", line_no)
 
 
-proc read_block(s: Stream, line_no: var int, depth: int, expect_close=false): Block =
-  if depth >= MAX_DEPTH:
-    error("Block nesting depth exceeded.", line_no)
+iterator parse_scfg*(stream: Stream): ScfgEvent =
+  ## Parses the scfg from the provided stream and issues events.
+  var
+    line_no = 0
+    open_blocks = 0
 
-  while not s.at_end():
-    var line = s.read_line()
+  while not stream.at_end():
+    var line = stream.read_line()
     var col = 0
     inc line_no
     eat_space(line, col)
+
     if col >= line.len or line[col] == '#':
       continue
+
     let words = split_words(line, line_no, col)
+
     if col < line.len and line[col] == '}':
-      if not expect_close:
+      if open_blocks == 0:
         error("Unexpected block closing '}' without opening '{'.", line_no)
-      return result
+      dec open_blocks
+      yield EVT_END_DIRECTIVE
+      continue
+
     if words.len == 0:
       continue
+
     let has_block = col < line.len and line[col] == '{'
-    result.add(
-      Directive(
-        name: words[0],
-        params: if words.len > 1: words[1..^1] else: @[],
-        line: line_no,
-        has_block: has_block,
-        children: if has_block: read_block(s, line_no, depth + 1, true) else: @[],
-      )
+
+    yield ScfgEvent(
+      kind: evt_start,
+      name: words[0],
+      params: if words.len > 1: words[1..^1] else: @[],
+      has_block: has_block,
+      line: line_no
     )
-  if expect_close:
+
+    if has_block:
+      inc open_blocks
+    else:
+      yield EVT_END_DIRECTIVE
+
+  if open_blocks > 0:
     error("Unclosed block: Expected '}'.", line_no)
 
 
 proc read_scfg*(stream: Stream): Block =
   ## Reads the scfg from the provided stream and returns a (maybe empty) Block.
-  var line_no = 0
-  return read_block(stream, line_no, 0)
+  var stack: Block
+
+  for event in parse_scfg(stream):
+    case event.kind
+    of evt_start:
+      let directive = Directive(name: event.name, params: event.params,
+                                has_block: event.has_block, line: event.line,
+                                children: @[])
+      if stack.len == 0:
+        result.add directive
+      else:
+        stack[^1].children.add directive
+      stack.add directive
+    of evt_end:
+      if stack.len > 0:
+        discard stack.pop()
 
 
 proc read_scfg*(s: string): Block =
