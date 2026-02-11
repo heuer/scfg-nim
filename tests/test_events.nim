@@ -31,7 +31,6 @@ suite "scfg test suite (streaming API)":
         output: string
         level = 0
         pending_newline = false
-        has_block_stack: seq[bool] = @[]
       for event in parse_scfg(stream):
         case event.kind:
         of evt_start:
@@ -39,15 +38,13 @@ suite "scfg test suite (streaming API)":
           output.add canonicalize(event.name)
           for param in event.params:
             output.add " " & canonicalize(param)
-          has_block_stack.add(event.has_block)
           if event.has_block:
             output.add " {\n"
             inc level
           else:
             output.add '\n'
         of evt_end:
-          let had_block = has_block_stack.pop()
-          if had_block:
+          if event.has_block:
             dec level
             if not output.ends_with(" {\n"):   # No empty blocks in canoncial output
               output.add repeat('\t', level)
@@ -128,19 +125,16 @@ suite "README":
     let stream = new_string_stream(server_config)
     var
       servers: seq[ServerConfig]
-      depth = 0
       in_server = false
       in_location = false
 
     for event in parse_scfg(stream):
       case event.kind:
       of evt_start:
-        inc depth
         if not in_server and event.name == "server":
           in_server = true
           servers.add ServerConfig()
-          continue
-        if in_server and not in_location:
+        elif in_server and not in_location:
           case event.name:
           of "location":
             in_location = true
@@ -161,11 +155,11 @@ suite "README":
           of "access_log": servers[^1].locations[^1].access_log = event.to_bool()
           else: error("Unknown directive: " & event.name)
       of evt_end:
-        dec depth
-        if in_location and depth == 1:
-          in_location = false
-        elif in_server and depth == 0:
-          in_server = false
+        if event.has_block:
+          if in_location:
+            in_location = false
+          elif in_server:
+            in_server = false
 
     check servers.len == 1
     check servers[0].port == 80

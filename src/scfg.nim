@@ -20,16 +20,18 @@ type
 
 
   ScfgEvent* = object
+    ## Indicates if the event has a block.
+    ## It cannot be assumed that the directive has children, it merly
+    ## symbolizes that the directive has an openig block `{`, or in case
+    ## of the `end` event that a block was closed.
+    has_block*: bool
     case kind*: ScfgEventKind
     of evt_start:
       name*: string  ## Directive name
       params*: seq[string]  ## Directive parameters
-      ## Indicates if the event has a block.
-      ## It cannot be assumed that the directive has children, it merly
-      ## symbolizes that the directive has an openig block `{`
-      has_block*: bool
       line*: int  ## Line number from the scfg doc
-    of evt_end: discard
+    of evt_end:
+      discard
 
 
   Directive* = ref object
@@ -48,7 +50,8 @@ type
 
 const
   NO_QUOTE = '\0'
-  EVT_END_DIRECTIVE = ScfgEvent(kind: evt_end)
+  EVT_END_DIRECTIVE = ScfgEvent(kind: evt_end, has_block: false)
+  EVT_END_BLOCK = ScfgEvent(kind: evt_end, has_block: true)
 
 
 func error(msg: string, line: int) {.noReturn.} =
@@ -132,7 +135,7 @@ iterator parse_scfg*(stream: Stream): ScfgEvent =
       if open_blocks == 0:
         error("Unexpected block closing '}' without opening '{'.", line_no)
       dec open_blocks
-      yield EVT_END_DIRECTIVE
+      yield EVT_END_BLOCK
       continue
 
     if words.len == 0:
@@ -171,9 +174,10 @@ proc read_scfg*(stream: Stream): Block =
         result.add directive
       else:
         stack[^1].children.add directive
-      stack.add directive
+      if event.has_block:
+        stack.add directive
     of evt_end:
-      if stack.len > 0:
+      if event.has_block:
         discard stack.pop()
 
 
