@@ -4,6 +4,12 @@ scfg (simple configuration file format) parser
 A Nim library for `scfg <https://codeberg.org/emersion/scfg>`_
 
 
+Features
+^^^^^^^^
+* Simple API
+* Fully compliant to the `scfg test suite <https://codeberg.org/emersion/scfg/src/branch/master/tests>`_
+
+
 Usage
 ^^^^^
 
