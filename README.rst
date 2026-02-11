@@ -146,7 +146,7 @@ re-iterating through the tree.
 
 
     func to_str(evt: ScfgEvent): string =
-      if evt.params.len > 1:
+      if evt.params.len != 1:
         error("Expected exatly one value for " & evt.name & " got: " & $evt.params)
       evt.params[0]
 
