@@ -200,8 +200,8 @@ re-iterating through the tree.
             in_location = true
             servers[^1].locations.add LocationConfig(
               access_log: true,
-              exact_match: event.params.len > 0 and event.params[0] == "=",
-              path: if event.params.len > 0: event.params[^1] else: ""
+              exact_match: event.params[0] == "=",
+              path: event.params[^1]
             )
           of "listen": servers[^1].port = event.to_uint()
           of "server_name": servers[^1].names = event.params
