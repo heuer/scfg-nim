@@ -1,0 +1,5 @@
+# Block with param isn't allowed
+
+$block = param {
+    color green
+}

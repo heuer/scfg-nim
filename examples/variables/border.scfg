@@ -1,0 +1,17 @@
+$border = {
+  left-margin 10
+  right-margin 10
+  background #000
+  foreground #fff
+}
+
+widget-a {
+  name "A widget"
+  border $border
+  padding 0 10 0
+}
+
+widget-b {
+  name "Another widget"
+  border $border
+}

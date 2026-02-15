@@ -1,0 +1,6 @@
+$ringo = "Ringo Starr"
+
+the-beatles "Paul McCartney" "John Lennon" "George Harrison" $ringo
+
+plays-drums $ringo
+
