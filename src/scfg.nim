@@ -119,9 +119,9 @@ iterator parse_scfg*(stream: Stream): ScfgEvent =
   var
     line_no = 0
     open_blocks = 0
+    line: string
 
-  while not stream.at_end():
-    var line = stream.read_line()
+  while stream.read_line(line):
     var col = 0
     inc line_no
     eat_space(line, col)
