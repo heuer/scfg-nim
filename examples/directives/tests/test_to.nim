@@ -4,7 +4,7 @@
 #
 ## Tests against the directive to_* functions
 import std/[unittest]
-import scfg
+import scfgdir
 
 
 proc directive(s: string): Directive =

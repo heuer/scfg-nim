@@ -20,7 +20,7 @@ Although the example uses a ``$`` as prefix for identifiers, the implementation
 is actually more lenient and any valid directive name could be used as
 identifier::
 
-    x = "D
+    x = U
 
     *y = 1 2 3
 

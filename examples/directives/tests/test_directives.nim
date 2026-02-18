@@ -3,10 +3,11 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 -- Lars Heuer
 #
 ##
-## Test against the scfg deserializer.
+## Runs the default test suite against the directive tree plus some extra tests.
 ##
 import std/[os, unittest, strutils, sequtils]
-import scfg
+from scfg import ScfgError
+import scfgdir
 
 
 func canonicalize(s: string): string =
@@ -35,7 +36,7 @@ func canonicalize(blck: Block, level=0): string =
 
 suite "scfg test suite":
 
-  let tests_dir = current_source_path().parent_dir()
+  let tests_dir = current_source_path() / ".." / ".."/ ".." / ".." / "tests"
 
   for kind, path in walk_dir(tests_dir / "valid"):
     if kind != pc_file:
