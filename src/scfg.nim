@@ -55,7 +55,7 @@ const
 
 
 func error(msg: string, line: int) {.noReturn.} =
-  let ex = new_exception(ScfgError, msg & " Line: " & $line)
+  let ex = new_exception(ScfgError, "Error line " & $line & ": " & msg)
   ex.line = line
   raise ex
 
@@ -69,6 +69,7 @@ func split_words(line: string, line_no: int, col: var int): seq[string] =
   var
     word = ""
     quote = NO_QUOTE
+  result = new_seq_of_cap[string](4)
   while col < line.len:
     let c = line[col]
     if c == '\\':
@@ -78,16 +79,16 @@ func split_words(line: string, line_no: int, col: var int): seq[string] =
         continue
       inc col
       if col >= line.len:
-        error("Unfinished escape sequence.", line_no)
+        error("Unfinished escape sequence", line_no)
       word.add(line[col])
     elif quote == NO_QUOTE:
       if c in {'{', '}'}:
         var i = col + 1
         eat_space(line, i)
         if i < line.len:
-          error("Expected newline after '" & c & "'.", line_no)
+          error("Expected newline after '" & c, line_no)
         if c == '}' and result.len != 0:  # This is an artificial prohibition but enforced by the grammar…
-          error("The end of a block marker '}' must be alone on a line.", line_no)
+          error("The end of a block marker '}' must be alone on a line", line_no)
         return
       if c in {' ', '\t'}:
         if word.len > 0:
@@ -111,7 +112,7 @@ func split_words(line: string, line_no: int, col: var int): seq[string] =
   if word.len > 0:
     result.add(word)
   if quote != NO_QUOTE:
-    error("Unclosed string literal.", line_no)
+    error("Unclosed string literal", line_no)
 
 
 iterator parse_scfg*(stream: Stream): ScfgEvent =
@@ -120,44 +121,31 @@ iterator parse_scfg*(stream: Stream): ScfgEvent =
     line_no = 0
     open_blocks = 0
     line: string
-
+    col: int
   while stream.read_line(line):
-    var col = 0
+    col = 0
     inc line_no
     eat_space(line, col)
-
     if col >= line.len or line[col] == '#':
       continue
-
     let words = split_words(line, line_no, col)
-
     if col < line.len and line[col] == '}':
       if open_blocks == 0:
-        error("Unexpected block closing '}' without opening '{'.", line_no)
+        error("Unexpected block closing '}' without opening '{'", line_no)
       dec open_blocks
       yield EVT_END_BLOCK
       continue
-
     if words.len == 0:
       continue
-
     let has_block = col < line.len and line[col] == '{'
-
-    yield ScfgEvent(
-      kind: evt_start,
-      name: words[0],
-      params: if words.len > 1: words[1..^1] else: @[],
-      has_block: has_block,
-      line: line_no
-    )
-
+    yield ScfgEvent(kind: evt_start, name: words[0], params: words[1..^1],
+                    has_block: has_block, line: line_no)
     if has_block:
       inc open_blocks
     else:
       yield EVT_END_DIRECTIVE
-
   if open_blocks > 0:
-    error("Unclosed block: Expected '}'.", line_no)
+    error("Unclosed block: Expected '}'", line_no)
 
 
 proc read_scfg*(stream: Stream): Block =
@@ -237,4 +225,3 @@ func to_float*(directive: Directive): float =
   except ValueError:
     error("Expected a decimal floating point for " & directive.name &
           " got: " & s, directive.line)
-
