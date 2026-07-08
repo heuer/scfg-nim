@@ -90,7 +90,7 @@ suite "README":
 
     func to_str(evt: ScfgEvent): string =
       if evt.params.len != 1:
-        error("Expected exatly one value for " & evt.name & " got: " & $evt.params)
+        error("Expected exactly one value for " & evt.name & " got: " & $evt.params)
       evt.params[0]
 
 
@@ -102,6 +102,12 @@ suite "README":
 
 
     func to_uint(evt: ScfgEvent): uint = parse_uint(to_str(evt))
+
+
+    template server: ServerConfig = servers[^1]
+
+
+    template location: LocationConfig = server.locations[^1]
 
 
     let server_config = """
@@ -138,21 +144,21 @@ suite "README":
           case event.name:
           of "location":
             in_location = true
-            servers[^1].locations.add LocationConfig(
+            server.locations.add LocationConfig(
               access_log: true,
               exact_match: event.params[0] == "=",
               path: event.params[^1]
             )
-          of "listen": servers[^1].port = event.to_uint()
-          of "server_name": servers[^1].names = event.params
+          of "listen": server.port = event.to_uint()
+          of "server_name": server.names = event.params
           else: error("Unknown directive: " & event.name)
         elif in_location:
           case event.name:
-          of "root": servers[^1].locations[^1].root = event.to_str()
-          of "index": servers[^1].locations[^1].index = event.params
-          of "allow": servers[^1].locations[^1].allow = event.to_str()
-          of "log_not_found": servers[^1].locations[^1].log_not_found = event.to_bool()
-          of "access_log": servers[^1].locations[^1].access_log = event.to_bool()
+          of "root": location.root = event.to_str()
+          of "index": location.index = event.params
+          of "allow": location.allow = event.to_str()
+          of "log_not_found": location.log_not_found = event.to_bool()
+          of "access_log": location.access_log = event.to_bool()
           else: error("Unknown directive: " & event.name)
       of evt_end:
         if event.has_block:
