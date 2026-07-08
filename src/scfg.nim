@@ -21,8 +21,8 @@ type
 
   ScfgEvent* = object
     ## Indicates if the event has a block.
-    ## It cannot be assumed that the directive has children, it merly
-    ## symbolizes that the directive has an openig block `{`, or in case
+    ## It cannot be assumed that the directive has children, it merley
+    ## symbolizes that the directive has an opening block `{`, or in case
     ## of the `end` event that a block was closed.
     has_block*: bool
     case kind*: ScfgEventKind
@@ -72,7 +72,9 @@ func split_words(line: string, line_no: int, col: var int): seq[string] =
         var i = col + 1
         eat_space(line, i)
         if i < line.len:
-          error("Expected newline after '" & c, line_no)
+          error("Expected newline after '" & c & "'", line_no)
+        if word.len > 0:
+          error("Expected whitespace before '" & c & "'", line_no)
         if c == '}' and result.len != 0:  # This is an artificial prohibition but enforced by the grammar…
           error("The end of a block marker '}' must be on its own line", line_no)
         return
