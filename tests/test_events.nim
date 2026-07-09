@@ -104,12 +104,6 @@ suite "README":
     func to_uint(evt: ScfgEvent): uint = parse_uint(to_str(evt))
 
 
-    template server: ServerConfig = servers[^1]
-
-
-    template location: LocationConfig = server.locations[^1]
-
-
     let server_config = """
     server   {
         listen  80
@@ -133,6 +127,9 @@ suite "README":
       servers: seq[ServerConfig]
       in_server = false
       in_location = false
+
+    template server: ServerConfig = servers[^1]
+    template location: LocationConfig = server.locations[^1]
 
     for event in parse_scfg(stream):
       case event.kind:
