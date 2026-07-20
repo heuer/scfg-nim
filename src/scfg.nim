@@ -42,7 +42,8 @@ const
 
 func error(msg: string, line: int) {.noReturn.} =
   let ex = new_exception(ScfgError, "Error line " & $line & ": " & msg)
-  ex.line = line
+  {.cast(noSideEffect).}:
+    ex.line = line
   raise ex
 
 

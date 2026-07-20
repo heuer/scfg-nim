@@ -1,6 +1,12 @@
 Changes
 =======
 
+0.4.1 -- 2026-mm-dd
+-------------------
+* Fixed issue that the parser did not work with ``experimental:strictFuncs``
+  enabled
+
+
 0.4.0 -- 2026-07-09
 -------------------
 * Fixed bug where ``directive{`` (no whitespace between name and ``{``

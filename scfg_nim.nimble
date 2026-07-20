@@ -1,4 +1,4 @@
-version = "0.4.0"
+version = "0.4.1"
 author = "Lars Heuer"
 description = "scfg (simple configuration file format) parser"
 license = "MIT"
